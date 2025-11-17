@@ -92,6 +92,7 @@ describe('RedisIoAdapter', () => {
         on: jest.fn(),
       };
       const callback = jest.fn();
+      const mockSocket = { id: 'test-socket-id' };
 
       adapter.bindClientConnect(mockServer, callback);
 
@@ -99,6 +100,12 @@ describe('RedisIoAdapter', () => {
         'connection',
         expect.any(Function),
       );
+
+      // Trigger the connection event to cover the handler
+      const connectionHandler = mockServer.on.mock.calls[0][1];
+      connectionHandler(mockSocket);
+
+      expect(callback).toHaveBeenCalledWith(mockSocket);
     });
   });
 });

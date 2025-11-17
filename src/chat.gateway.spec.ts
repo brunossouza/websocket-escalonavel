@@ -2,6 +2,10 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { Server, Socket } from 'socket.io';
 import { ChatGateway } from './chat.gateway';
 
+jest.mock('os', () => ({
+  hostname: jest.fn().mockReturnValue('test-host'),
+}));
+
 describe('ChatGateway', () => {
   let gateway: ChatGateway;
   let mockServer: Partial<Server>;
@@ -87,20 +91,37 @@ describe('ChatGateway', () => {
       expect(mockServer.emit).toHaveBeenCalledWith('messages', {
         nickname: 'test-nick',
         message: 'test-msg',
-        server: expect.any(String),
+        server: 'test-host',
       });
     });
 
-    it('should handle no rooms', () => {
+    it('should handle multiple rooms', () => {
+      const loggerSpy = jest.spyOn(gateway['logger'], 'log');
+      const debugSpy = jest.spyOn(gateway['logger'], 'debug');
       mockSocket = {
         id: 'test-client-id',
-        rooms: new Set(),
+        rooms: new Set(['room1', 'room2']),
       };
       const data = { nickname: 'test-nick', message: 'test-msg' };
 
       gateway.handleMessages(mockSocket as Socket, data);
 
-      expect(mockServer.to).toHaveBeenCalledWith([]);
+      expect(loggerSpy).toHaveBeenCalledWith(
+        expect.stringContaining(
+          'Mensagem recebida no de test-client-id: test-nick - test-msg',
+        ),
+      );
+      expect(debugSpy).toHaveBeenCalledWith(
+        expect.stringContaining(
+          'Cliente test-client-id está nas rooms: room1, room2',
+        ),
+      );
+      expect(mockServer.to).toHaveBeenCalledWith(['room1', 'room2']);
+      expect(mockServer.emit).toHaveBeenCalledWith('messages', {
+        nickname: 'test-nick',
+        message: 'test-msg',
+        server: 'test-host',
+      });
     });
   });
 });
