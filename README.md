@@ -1,98 +1,57 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# WebSocket Escalonável
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+> Infraestrutura NestJS + Socket.IO preparada para escalar horizontalmente com Redis e orquestração via Docker/Swarm.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Visão Geral
+- **Stack:** NestJS 11, Socket.IO, Redis adapter, TypeScript e Yarn.
+- **Objetivo:** distribuir eventos WebSocket entre múltiplas instâncias compartilhando um broker Redis único, mantendo logs por host (`os.hostname()`).
+- **Principais módulos:** `chat.gateway.ts` (rooms & broadcast), `redis-io.adapter.ts` (cluster), `app.module.ts` (injeção) e `index.html` (cliente leve).
 
-## Description
+## Requisitos
+- Node.js 20+ e Yarn 1.x.
+- Redis acessível via `REDIS_URL` (ex.: `redis://localhost:6379`).
+- Docker >= 24 quando desejar usar o fluxo containerizado/Swarm.
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
-
-## Project setup
-
+## Configuração Rápida
 ```bash
-$ yarn install
+yarn install
+yarn start:dev                           # API + WebSocket com hot reload
+REDIS_URL=redis://host:6379 yarn start:prod   # bundle compilado apontando para Redis externo
 ```
 
-## Compile and run the project
-
+## Testes e Qualidade
 ```bash
-# development
-$ yarn run start
-
-# watch mode
-$ yarn run start:dev
-
-# production mode
-$ yarn run start:prod
+yarn test        # unitários (Jest)
+yarn test:e2e    # cenários e2e em /test
+yarn test:cov    # relatório em /coverage
+yarn lint        # ESLint com --fix automatizado
+yarn format      # Prettier aplicado em src/ e test/
 ```
 
-## Run tests
+## Docker & Swarm
+- `Dockerfile` gera imagem Node 20 enxuta com build multi-stage.
+- `compose-swarm-stack.yml` demonstra múltiplas réplicas do app compartilhando o mesmo serviço Redis; ajuste `deploy.replicas` para escalar.
+- Localmente, é possível testar com `docker compose up --build` (certifique-se de expor a porta configurada em `PORT`).
 
-```bash
-# unit tests
-$ yarn run test
+## Variáveis Importantes
+| Variável | Descrição | Default |
+| --- | --- | --- |
+| `PORT` | Porta HTTP/WebSocket exposta pelo Nest | `3000` |
+| `REDIS_URL` | Endpoint Redis usado pelo adapter | `redis://localhost:6379` |
+| `NODE_ENV` | Comporta ajustes de log/cache | `development` |
 
-# e2e tests
-$ yarn run test:e2e
+## Fluxo GitFlow
+- `main` representa produção; protegido contra pushes diretos.
+- `develop` agrega o trabalho aprovado. Crie `feature/<ticket>`, `bugfix/<ticket>`, `release/<versão>` e `hotfix/<issue>` conforme necessidade.
+- Fluxo padrão: feature → PR em `develop`; release → branch de estabilização que merge em `main` e retorna para `develop`; hotfix sai de `main` e volta para ambos os ramos.
 
-# test coverage
-$ yarn run test:cov
-```
+## Contribuição
+1. Abra uma issue descrevendo contexto e impacto esperado.
+2. Crie a branch a partir de `develop` e mantenha commits imperativos e pequenos.
+3. Garanta `yarn lint && yarn test` verdes antes do PR e atualize docs (`README.md`, `AGENTS.md`) quando mexer em contratos ou deploy.
+4. No PR, inclua resumo, comandos executados, logs/screenshots relevantes e checklist de rollout/rollback.
 
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ yarn install -g @nestjs/mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+## Monitoramento e Operação
+- Cada log leva o hostname para facilitar troubleshooting em múltiplos pods.
+- Configure dashboards para métricas críticas: tempo de conexão ao Redis, número de sockets ativos e latência média por evento.
+- Em produção, combine com observabilidade (ELK, Loki, CloudWatch) para armazenar os logs gerados pelo `Logger` do Nest.
