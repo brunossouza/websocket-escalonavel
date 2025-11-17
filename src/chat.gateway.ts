@@ -54,7 +54,7 @@ export class ChatGateway implements OnGatewayConnection {
     );
 
     // envia a mensagem para todos os clientes na room roomChatTest
-    this.server.to(rooms ? rooms : 'roomChatTest').emit('messages', {
+    this.server.to(rooms.length ? rooms : 'roomChatTest').emit('messages', {
       nickname: data.nickname,
       message: data.message,
       server: os.hostname(),
