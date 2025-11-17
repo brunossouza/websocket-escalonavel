@@ -2,6 +2,8 @@
 
 > Infraestrutura NestJS + Socket.IO preparada para escalar horizontalmente com Redis e orquestração via Docker/Swarm.
 
+> ⚠️ **Nota:** este repositório existe apenas para fins de testes e estudo; não utilize este código diretamente em produção sem uma revisão completa de segurança e observabilidade.
+
 ## Visão Geral
 - **Stack:** NestJS 11, Socket.IO, Redis adapter, TypeScript e Yarn.
 - **Objetivo:** distribuir eventos WebSocket entre múltiplas instâncias compartilhando um broker Redis único, mantendo logs por host (`os.hostname()`).
