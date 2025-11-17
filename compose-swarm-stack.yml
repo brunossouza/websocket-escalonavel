@@ -1,0 +1,72 @@
+services:
+  redis:
+    image: redis:latest
+    networks:
+      - backend
+
+  redisinsight:
+    image: redis/redisinsight:latest
+    ports:
+      - '5540:5540'
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      labels:
+        - 'traefik.enable=true'
+        - 'traefik.http.routers.redisinsight.rule=Host(`redisinsight.localhost`)'
+        - 'traefik.http.routers.redisinsight.entrypoints=web'
+        - 'traefik.http.services.redisinsight.loadbalancer.server.port=5540'
+    networks:
+      - backend
+      - frontend
+
+  app:
+    image: websocket-escalonavel:v4
+    ports:
+      - '3000:3000'
+    deploy:
+      replicas: 3
+      restart_policy:
+        condition: on-failure
+      update_config:
+        parallelism: 1
+        delay: 10s
+      labels:
+        # 🔥 Sticky session
+        - 'traefik.enable=true'
+        - 'traefik.http.services.webchat-app.loadbalancer.server.port=3000'
+        - 'traefik.http.routers.webchat-app.rule=Host(`webchat.localhost`)'
+        - 'traefik.http.routers.webchat-app.entrypoints=web'
+        - 'traefik.http.routers.webchat-app.service=webchat-app'
+        - 'traefik.http.services.webchat-app.loadbalancer.sticky.cookie=true'
+        - 'traefik.http.services.webchat-app.loadbalancer.sticky.cookie.name=webchat_sticky'
+    environment:
+      - REDIS_URL=redis://redis:6379
+    networks:
+      - backend
+      - frontend
+
+  traefik:
+    image: traefik:v3.1
+    command:
+      - '--api.insecure=true'
+      - '--providers.swarm=true'
+      - '--providers.swarm.endpoint=unix:///var/run/docker.sock'
+      - '--entrypoints.web.address=:80'
+    ports:
+      - '80:80'
+      - '8080:8080'
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - frontend
+      - backend
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+
+networks:
+  frontend:
+  backend:
